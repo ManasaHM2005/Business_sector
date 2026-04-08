@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Custom dark theme overrides */
+body {
+  background: #0a0e1a;
+  min-height: 100vh;
+}

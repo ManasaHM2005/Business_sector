@@ -1,0 +1,342 @@
+{
+    "created_at": "2026-04-09T01:36:31.680119",
+    "agent_logs": [
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:32.018810"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:32.100183"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:32.146687"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:32.215425"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:32.265264"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:33.992419"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:34.073682"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:34.136556"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:34.204783"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:34.260335"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:36.013486"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:36.095344"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:36.161421"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:36.223986"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:36.300567"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:37.991233"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:38.041635"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:38.093789"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:38.158759"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:38.227862"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:40.006847"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:40.053380"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:40.102088"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:40.158139"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:40.201966"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:42.013608"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:42.086615"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:42.154569"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:42.222621"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:42.299083"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:43.998574"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:44.064875"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:44.140583"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:44.208674"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:44.275212"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "3 alerts generated",
+            "timestamp": "2026-04-09T01:45:46.018343"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:45:46.105619"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:45:46.205720"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 3/5 drives",
+            "timestamp": "2026-04-09T01:45:46.288141"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:45:46.389897"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "11 alerts generated",
+            "timestamp": "2026-04-09T01:46:31.644532"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:46:31.691605"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:46:31.734320"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 5/5 drives",
+            "timestamp": "2026-04-09T01:46:31.774204"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:46:31.817346"
+        },
+        {
+            "agent": "StudentAgent",
+            "action": "analyzed_student",
+            "details": "11 alerts generated",
+            "timestamp": "2026-04-09T01:47:31.653490"
+        },
+        {
+            "agent": "FacultyAgent",
+            "action": "generated_announcements",
+            "details": "3 announcements",
+            "timestamp": "2026-04-09T01:47:31.721995"
+        },
+        {
+            "agent": "CanteenAgent",
+            "action": "crowd_prediction",
+            "details": "Current: 89%",
+            "timestamp": "2026-04-09T01:47:31.780159"
+        },
+        {
+            "agent": "PlacementAgent",
+            "action": "analyzed_placement",
+            "details": "Eligible for 5/5 drives",
+            "timestamp": "2026-04-09T01:47:31.845237"
+        },
+        {
+            "agent": "CoordinatorAgent",
+            "action": "full_coordination",
+            "details": "All agents synced",
+            "timestamp": "2026-04-09T01:47:31.904739"
+        }
+    ],
+    "faculty_announcements": [
+        "OS class rescheduled to 2:00 PM tomorrow.",
+        "DBMS lab submission deadline extended to next Wednesday.",
+        "Guest lecture on Transformers this Friday at 3 PM."
+    ],
+    "last_updated": "2026-04-09T01:47:31.904768",
+    "daily_summary": "Good morning, Alice Johnson! \ud83d\udc4b | \ud83d\udcc5 You have 4 classes today. | \ud83d\udcdd 10 assignments pending \u2014 don't miss the deadlines! | \ud83c\udf54 Canteen tip \u2014 10:00 (~20% crowd). | \ud83d\udcbc You're eligible for 5/5 upcoming placement drives. | \ud83d\udce2 Faculty update: OS class rescheduled to 2:00 PM tomorrow.",
+    "last_coordinated": "2026-04-09T01:47:31.875772",
+    "cross_insights": [
+        {
+            "icon": "\u26a1",
+            "message": "Clear your pending assignments before placement prep \u2014 multitasking reduces performance.",
+            "severity": "info"
+        },
+        {
+            "icon": "\ud83c\udf7d\ufe0f",
+            "message": "Canteen is 89% full. Skip now and focus on studies \u2014 go during the suggested time.",
+            "severity": "info"
+        }
+    ],
+    "placement": {
+        "eligible_count": 5,
+        "total_drives": 5,
+        "top_recommendation": "Eligible for Tier-1 (Google, Microsoft). Focus on Advanced DSA & System Design."
+    },
+    "student_profile": {
+        "name": "Alice Johnson",
+        "attendance": 85.0,
+        "cgpa": 9.5,
+        "pending_count": 10
+    },
+    "canteen": {
+        "current_crowd": 89,
+        "status_level": "high",
+        "best_time": "10:00 (~20% crowd)"
+    },
+    "canteen_override": 89
+}

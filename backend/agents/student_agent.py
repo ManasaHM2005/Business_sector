@@ -19,19 +19,23 @@ def run(student_id=1):
     """Main entry point — run the Student Agent."""
     conn = get_db_connection()
     student = conn.execute("SELECT * FROM student_info WHERE id=?", (student_id,)).fetchone()
-    tasks = conn.execute(
-        "SELECT * FROM tasks WHERE student_id=? ORDER BY due_date ASC", (student_id,)
-    ).fetchall()
-    schedule = conn.execute(
-        "SELECT * FROM class_schedule WHERE student_id=? AND day=?",
-        (student_id, datetime.now().strftime("%A"))
-    ).fetchall()
+    tasks = conn.execute("SELECT * FROM tasks WHERE student_id=? ORDER BY due_date ASC", (student_id,)).fetchall()
+    schedule = conn.execute("SELECT * FROM class_schedule WHERE student_id=? AND day=?", (student_id, datetime.now().strftime("%A"))).fetchall()
+    sub_attendance = conn.execute("SELECT * FROM subject_attendance WHERE student_id=?", (student_id,)).fetchall()
     conn.close()
 
     if not student:
         return {"status": "error", "message": "Student not found"}
 
     student_dict = dict(student)
+    subject_attendance_list = [dict(a) for a in sub_attendance]
+    
+    # REAL-WORLD RECONCILIATION: 
+    # Calculate overall attendance as average of subjects if available
+    if subject_attendance_list:
+        overall_att = sum(a['attendance_pct'] for a in subject_attendance_list) / len(subject_attendance_list)
+        student_dict['attendance'] = round(overall_att, 1)
+    
     alerts = _generate_alerts(student_dict, tasks)
     pending = [dict(t) for t in tasks if t["status"] == "Pending"]
     completed = [dict(t) for t in tasks if t["status"] == "Completed"]
@@ -41,12 +45,14 @@ def run(student_id=1):
     ctx = read_context()
     ctx["student_profile"] = {
         "name": student_dict["name"],
+        "usn": student_dict["usn"],
         "attendance": student_dict["attendance"],
         "cgpa": student_dict["cgpa"],
         "pending_count": len(pending),
+        "profile_pic": student_dict.get("profile_pic", "")
     }
     write_context(ctx)
-    log_agent_action("StudentAgent", "analyzed_student", f"{len(alerts)} alerts generated")
+    log_agent_action("StudentAgent", "analyzed_student", f"Profile reconciled with {len(subject_attendance_list)} subjects")
 
     return {
         "status": "success",
@@ -55,6 +61,7 @@ def run(student_id=1):
         "pending_tasks": pending,
         "completed_tasks": completed,
         "today_classes": today_classes,
+        "subject_attendance": subject_attendance_list,
         "stats": {
             "total_tasks": len(tasks),
             "pending": len(pending),

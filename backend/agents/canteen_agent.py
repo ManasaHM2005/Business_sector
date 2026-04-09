@@ -11,6 +11,7 @@ Responsibilities:
 from datetime import datetime
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from database import get_db_connection
 from agents.mcp_context import read_context, write_context, log_agent_action
 
 
@@ -32,7 +33,10 @@ MENU = [
 def run():
     """Main entry point — run the Canteen Agent."""
     ctx = read_context()
-    
+    conn = get_db_connection()
+    db_menu = conn.execute("SELECT * FROM canteen_menu").fetchall()
+    conn.close()
+
     current_hour = datetime.now().hour
     crowd_pct = ctx.get("canteen_override", CROWD_DATA.get(current_hour, 15))
 
@@ -51,24 +55,16 @@ def run():
     best_time = _find_best_time(current_hour)
     suggestion = f"Best time to visit: {best_time}"
 
-    # Crowd forecast for next 4 hours
+    # Crowd forecast
     forecast = []
     for h in range(current_hour, min(current_hour + 4, 21)):
         pct = CROWD_DATA.get(h, 15)
-        forecast.append({
-            "hour": f"{h}:00",
-            "crowd_pct": pct,
-            "level": "high" if pct >= 80 else ("medium" if pct >= 50 else "low"),
-        })
+        forecast.append({"hour": f"{h}:00", "crowd_pct": pct, "level": "high" if pct >= 80 else ("medium" if pct >= 50 else "low")})
 
     # Update MCP context
-    ctx["canteen"] = {
-        "current_crowd": crowd_pct,
-        "status_level": status_level,
-        "best_time": best_time,
-    }
+    ctx["canteen"] = {"current_crowd": crowd_pct, "status_level": status_level, "best_time": best_time}
     write_context(ctx)
-    log_agent_action("CanteenAgent", "crowd_prediction", f"Current: {crowd_pct}%")
+    log_agent_action("CanteenAgent", "crowd_prediction", f"Current crowd: {crowd_pct}%")
 
     return {
         "status": status,
@@ -77,7 +73,7 @@ def run():
         "suggestion": suggestion,
         "best_time": best_time,
         "forecast": forecast,
-        "menu": MENU,
+        "menu": [dict(m) for m in db_menu] if db_menu else MENU,
     }
 
 

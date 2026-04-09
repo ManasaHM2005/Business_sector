@@ -16,28 +16,40 @@ from agents import student_agent, faculty_agent, canteen_agent, placement_agent
 from agents.mcp_context import read_context, write_context, log_agent_action
 
 
+import concurrent.futures
+import time
+
 def run(student_id=1):
-    """Main entry point — orchestrate all agents and produce unified output."""
+    """Main entry point — orchestrated parallel agent execution."""
+    start_time = time.time()
+    
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Submit all agent tasks in parallel
+        f_student = executor.submit(student_agent.run, student_id)
+        f_faculty = executor.submit(faculty_agent.run, student_id)
+        f_canteen = executor.submit(canteen_agent.run)
+        f_placement = executor.submit(placement_agent.run, student_id)
+        
+        # Wait for all to complete
+        student_data = f_student.result()
+        faculty_data = f_faculty.result()
+        canteen_data = f_canteen.result()
+        placement_data = f_placement.result()
 
-    # Step 1: Run all agents
-    student_data = student_agent.run(student_id)
-    faculty_data = faculty_agent.run(student_id)
-    canteen_data = canteen_agent.run()
-    placement_data = placement_agent.run(student_id)
-
-    # Step 2: Generate the AI Daily Summary
+    # Step 2: Generate Insights (Sequentially as they depend on agent output)
     summary = _generate_daily_summary(student_data, faculty_data, canteen_data, placement_data)
-
-    # Step 3: Cross-agent intelligence
     cross_insights = _cross_agent_analysis(student_data, placement_data, canteen_data)
 
-    # Step 4: Update MCP context with full coordinated state
+    # Step 4: Update MCP context
     ctx = read_context()
     ctx["daily_summary"] = summary
     ctx["last_coordinated"] = datetime.now().isoformat()
     ctx["cross_insights"] = cross_insights
     write_context(ctx)
-    log_agent_action("CoordinatorAgent", "full_coordination", "All agents synced")
+    
+    end_time = time.time()
+    latency = round((end_time - start_time) * 1000, 2)
+    log_agent_action("CoordinatorAgent", "parallel_sync", f"All agents synced in {latency}ms")
 
     return {
         "summary": summary,
@@ -51,34 +63,39 @@ def run(student_id=1):
 
 
 def _generate_daily_summary(student, faculty, canteen, placement):
-    """Generate a natural-language AI daily summary for the student."""
+    """Generate a high-fidelity, contextual AI daily summary."""
     name = student.get("student", {}).get("name", "Student")
     pending = student.get("stats", {}).get("pending", 0)
-    classes = student.get("stats", {}).get("today_classes_count", 0)
-    att = student.get("student", {}).get("attendance", 0)
-    canteen_best = canteen.get("best_time", "anytime")
-    eligible = placement.get("stats", {}).get("eligible_count", 0)
-    total_drives = placement.get("stats", {}).get("total_drives", 0)
-    announcements = faculty.get("announcements", [])
-
-    lines = [f"Good {'morning' if datetime.now().hour < 12 else 'afternoon' if datetime.now().hour < 17 else 'evening'}, {name}! 👋"]
-
-    if classes > 0:
-        lines.append(f"📅 You have {classes} class{'es' if classes > 1 else ''} today.")
+    attendance_data = student.get("subject_attendance", [])
+    all_tasks = student.get("pending_tasks", [])
+    eligible_count = placement.get("stats", {}).get("eligible", 0)
+    
+    # 1. Greeting
+    lines = [f"System check complete for {name}. 🧠"]
+    
+    # 2. Critical Academic Insights (Subject-Specific)
+    at_risk = [s for s in attendance_data if s["attendance_pct"] < 75]
+    if at_risk:
+        subjects = ", ".join([f"{s['subject']} ({s['attendance_pct']}%)" for s in at_risk])
+        lines.append(f"⚠️ **Urgent**: Attendance in {subjects} is below threshold. Prioritize these sessions.")
     else:
-        lines.append("📅 No classes scheduled for today.")
+        lines.append("✅ Academic status: All subjects meet attendance requirements.")
+        
+    # 3. Task Intelligence
+    if all_tasks:
+        recent_tasks = all_tasks[:2] # Top 2 priorities
+        task_str = " & ".join([f"'{t['task_name']}'" for t in recent_tasks])
+        lines.append(f"✍️ Intelligence detect {len(all_tasks)} pending nodes. focus on {task_str} immediately.")
+    
+    # 4. Career Mapping
+    if eligible_count > 0:
+        lines.append(f"🎯 Career Hub: {eligible_count} matched recruitment drives detected in your neural path.")
+    
+    # 5. Campus Dynamics
+    c_status = canteen.get("status", "Stable")
+    lines.append(f"🍔 Campus Dynamics: Canteen load is {c_status}. Optimal sync suggested for {canteen.get('best_time')}.")
 
-    if pending > 0:
-        lines.append(f"📝 {pending} assignment{'s' if pending > 1 else ''} pending — don't miss the deadlines!")
-
-    lines.append(f"🍔 Canteen tip — {canteen_best}.")
-    lines.append(f"💼 You're eligible for {eligible}/{total_drives} upcoming placement drives.")
-
-    if announcements:
-        top = announcements[0]
-        lines.append(f"📢 Faculty update: {top['message']}")
-
-    return " | ".join(lines)
+    return " ".join(lines)
 
 
 def _cross_agent_analysis(student, placement, canteen):

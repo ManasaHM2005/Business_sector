@@ -28,6 +28,7 @@ def run(student_id=1):
     """Main entry point — run the Placement Agent."""
     conn = get_db_connection()
     student = conn.execute("SELECT * FROM student_info WHERE id=?", (student_id,)).fetchone()
+    db_drives = conn.execute("SELECT * FROM placement_drives").fetchall()
     conn.close()
 
     if not student:
@@ -35,74 +36,104 @@ def run(student_id=1):
 
     student_dict = dict(student)
     cgpa = student_dict["cgpa"]
+    # Safely handle skills even if None or empty
+    student_skills_str = student_dict.get("skills") or ""
+    student_skills = [s.strip().lower() for s in student_skills_str.split(",") if s.strip()]
 
-    # Filter eligible drives
-    eligible = [d for d in UPCOMING_DRIVES if cgpa >= d["min_cgpa"]]
-    not_eligible = [d for d in UPCOMING_DRIVES if cgpa < d["min_cgpa"]]
+    # ALL AVAILABLE DRIVES (from DB)
+    all_drives = [dict(d) for d in db_drives] if db_drives else UPCOMING_DRIVES
+    
+    # CATEGORIZE DRIVES
+    eligible_drives = []
+    ineligible_drives = []
+    
+    for drive in all_drives:
+        drive_skills_str = drive.get("skills_required") or ""
+        drive_skills = [s.strip().lower() for s in drive_skills_str.split(",") if s.strip()]
+        
+        # Match if no skills required OR any student skill matches drive requirement
+        skill_match = not drive_skills or any(skill in student_skills for skill in drive_skills)
+        cgpa_match = cgpa >= drive.get("min_cgpa", 0)
+        
+        if skill_match and cgpa_match:
+            eligible_drives.append(drive)
+        else:
+            ineligible_drives.append(drive)
 
     # Skill recommendations
-    recommendations = _generate_recommendations(cgpa, student_dict)
+    recommendations = _generate_recommendations(cgpa, student_dict, student_skills)
 
     # Preparation plan
-    prep_plan = _generate_prep_plan(cgpa)
+    prep_plan = _generate_prep_plan(cgpa, student_skills)
 
     # Update MCP context
     ctx = read_context()
     ctx["placement"] = {
-        "eligible_count": len(eligible),
-        "total_drives": len(UPCOMING_DRIVES),
-        "top_recommendation": recommendations[0]["message"] if recommendations else "",
+        "eligible_count": len(eligible_drives),
+        "total_drives": len(all_drives),
+        "top_recommendation": recommendations[0]["message"] if recommendations else "Keep upskilling!"
     }
     write_context(ctx)
-    log_agent_action("PlacementAgent", "analyzed_placement", f"Eligible for {len(eligible)}/{len(UPCOMING_DRIVES)} drives")
+    log_agent_action("PlacementAgent", "analyzed_placement", f"Identified {len(eligible_drives)} matching drives out of {len(all_drives)} total")
 
     return {
-        "eligible_drives": eligible,
-        "not_eligible_drives": not_eligible,
+        "status": "success",
+        "student": student_dict,
+        "eligible_drives": eligible_drives,
+        "all_drives": all_drives,
+        "ineligible_drives": ineligible_drives,
         "recommendations": recommendations,
         "preparation_plan": prep_plan,
         "stats": {
-            "cgpa": cgpa,
-            "eligible_count": len(eligible),
-            "total_drives": len(UPCOMING_DRIVES),
+            "eligible": len(eligible_drives),
+            "total": len(all_drives),
         }
     }
 
 
-def _generate_recommendations(cgpa, student):
-    """Generate personalized skill recommendations based on CGPA tier."""
+def _generate_recommendations(cgpa, student, skills):
+    """Generate personalized skill recommendations based on CGPA and current skills."""
     recs = []
 
-    if cgpa >= 8.5:
-        recs.append({"icon": "🌟", "message": "Eligible for Tier-1 (Google, Microsoft). Focus on Advanced DSA & System Design."})
-        recs.append({"icon": "💡", "message": "Practice LeetCode Medium/Hard — target 200+ problems."})
-        recs.append({"icon": "📝", "message": "Prepare 2 strong projects with live demos for interviews."})
-    elif cgpa >= 7.0:
-        recs.append({"icon": "✅", "message": "Eligible for most mass recruiters. Strengthen DSA basics."})
-        recs.append({"icon": "🔧", "message": "Build projects using React, Node.js, or Python + FastAPI."})
-        recs.append({"icon": "📊", "message": "Practice aptitude questions — Quantitative + Logical Reasoning."})
+    if skills:
+        recs.append({"icon": "🛠️", "message": f"Identified current skills: {', '.join(skills).upper()}."})
     else:
-        recs.append({"icon": "⚠️", "message": f"CGPA {cgpa} limits options. Focus on improving grades this semester."})
-        recs.append({"icon": "📖", "message": "Master core CS subjects: OS, DBMS, Computer Networks."})
-        recs.append({"icon": "🎯", "message": "Target service-based companies first, then upskill."})
+        recs.append({"icon": "❓", "message": "No skills listed in profile. Add skills to get better AI target mapping."})
 
+    if cgpa >= 8.5:
+        recs.append({"icon": "🌟", "message": "High academic standing! Match your technical stack with Google/Microsoft interview loops."})
+        if "python" in skills or "java" in skills:
+            recs.append({"icon": "🚀", "message": f"Strong match with {skills[0].title()} detected. Recommended for Core Engineering roles."})
+    elif cgpa >= 7.0:
+        recs.append({"icon": "✅", "message": "Good eligibility. Focus on sharpening your selected skills for technical rounds."})
+        if not skills:
+            recs.append({"icon": "📢", "message": "Tip: Mastering React or Node.js will unlock more startups on our platform."})
+    else:
+        recs.append({"icon": "⚠️", "message": "Focus on improving CGPA while building a strong GitHub portfolio to offset grade requirements."})
+
+    recs.append({"icon": "🔗", "message": "Cross-Agent Insight: Student Hub reports your attendance is stable, allowing more time for skill-building."})
     return recs
 
 
-def _generate_prep_plan(cgpa):
-    """Generate a weekly preparation plan."""
-    if cgpa >= 8.0:
-        return [
-            "Mon-Wed: DSA problems (2 per day)",
-            "Thu: System Design concepts",
-            "Fri: Mock interviews & behavioral prep",
-            "Sat: Project work & portfolio updates",
-            "Sun: Rest + light revision",
-        ]
+def _generate_prep_plan(cgpa, skills):
+    """Generate a weekly preparation plan, personalized by skills."""
+    plan = []
+    
+    if "react" in skills or "javascript" in skills:
+        plan.append("Mon-Tue: Advanced Frontend (React Hooks, State Management)")
+    elif "python" in skills:
+        plan.append("Mon-Tue: Data Structures with Python (Focus on Dictionaries & Sets)")
     else:
-        return [
-            "Mon-Wed: Core subjects revision (OS, DBMS, CN)",
-            "Thu-Fri: DSA basics (arrays, strings, sorting)",
-            "Sat: Aptitude practice (30 min) + 1 mini project",
-            "Sun: Rest + revision of weak topics",
-        ]
+        plan.append("Mon-Tue: Foundation Technical Skills (Pick a primary language)")
+
+    plan.append("Wed: Aptitude & Logical Reasoning (Solve 20 problems)")
+    
+    if cgpa < 7.5:
+        plan.append("Thu: Backlog revision / Grade Improvement study")
+    else:
+        plan.append("Thu: Open Source Contributions or Portfolio Mini-Project")
+
+    plan.append("Fri-Sat: Mock coding test & Mock behavioral interview")
+    plan.append("Sun: Revision and planning for next week")
+    
+    return plan

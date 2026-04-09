@@ -15,12 +15,12 @@ CONTEXT_FILE = os.path.join(os.path.dirname(__file__), "..", "context.json")
 def read_context():
     """Read the shared MCP context from disk."""
     if not os.path.exists(CONTEXT_FILE):
-        return {"created_at": datetime.now().isoformat(), "agent_logs": []}
+        return {"created_at": datetime.now().isoformat(), "history": []}
     try:
         with open(CONTEXT_FILE, "r") as f:
             return json.load(f)
     except Exception:
-        return {"created_at": datetime.now().isoformat(), "agent_logs": []}
+        return {"created_at": datetime.now().isoformat(), "history": []}
 
 def write_context(data):
     """Write updated context back to disk using atomic replace."""
@@ -37,8 +37,8 @@ def write_context(data):
 def log_agent_action(agent_name, action, details="", severity=None):
     """Log an agent's action into the shared context for auditability."""
     ctx = read_context()
-    if "agent_logs" not in ctx:
-        ctx["agent_logs"] = []
+    if "history" not in ctx:
+        ctx["history"] = []
     
     log_entry = {
         "agent": agent_name,
@@ -49,8 +49,8 @@ def log_agent_action(agent_name, action, details="", severity=None):
     if severity:
         log_entry["severity"] = severity
         
-    ctx["agent_logs"].append(log_entry)
+    ctx["history"].append(log_entry)
     
     # Keep only last 50 logs to avoid file bloat
-    ctx["agent_logs"] = ctx["agent_logs"][-50:]
+    ctx["history"] = ctx["history"][-50:]
     write_context(ctx)

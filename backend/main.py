@@ -38,7 +38,10 @@ class SignupRequest(BaseModel):
     role: str
     name: str
     usn: str
-    branch: str
+    branch: str = "Computer Science"
+    skills: str = ""
+    profile_pic: Optional[str] = ""
+    cgpa: float = 7.0
 
 @app.post("/api/auth/login")
 def login(creds: LoginRequest):
@@ -70,10 +73,24 @@ def signup(data: SignupRequest):
         student_id = None
         if data.role == "student":
             conn.execute(
-                "INSERT INTO student_info (name, year, major, attendance, cgpa, skills, email) VALUES (?,?,?,?,?,?,?)",
-                (data.name, "1st Year", data.branch, 85.0, 7.5, "", data.email)
+                "INSERT INTO student_info (name, usn, year, major, attendance, cgpa, skills, email, profile_pic) VALUES (?,?,?,?,?,?,?,?,?)",
+                (data.name, data.usn, "1st Year", data.branch, 85.0, data.cgpa, data.skills, data.email, data.profile_pic)
             )
             student_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            
+            # Add a default weekly schedule so "Today's Schedule" works immediately
+            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+            default_classes = [
+                ("Core Subject 1", "9:00 AM", "Room 101"),
+                ("Core Subject 2", "11:00 AM", "Room 205"),
+                ("Major Elective", "2:00 PM", "Lab 1"),
+            ]
+            for day in days:
+                for sub, time, room in default_classes:
+                    conn.execute(
+                        "INSERT INTO class_schedule (student_id, day, subject, time, room) VALUES (?,?,?,?,?)",
+                        (student_id, day, sub, time, room)
+                    )
             
             # Add some demo tasks for the new student so dashboard isn't empty
             tasks = [
@@ -86,8 +103,8 @@ def signup(data: SignupRequest):
             )
 
         conn.execute(
-            "INSERT INTO users (email, password, role, name, usn, branch, student_id) VALUES (?,?,?,?,?,?,?)",
-            (data.email, data.password, data.role, data.name, data.usn, data.branch, student_id)
+            "INSERT INTO users (email, password, role, name, usn, branch, student_id, profile_pic) VALUES (?,?,?,?,?,?,?,?)",
+            (data.email, data.password, data.role, data.name, data.usn, data.branch, student_id, data.profile_pic)
         )
         conn.commit()
         user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -150,11 +167,17 @@ def api_canteen(): return canteen_agent.run()
 @app.get("/api/placement")
 def api_placement(student_id: int = 1): return placement_agent.run(student_id)
 @app.get("/api/alerts")
-def api_alerts():
-    data = student_agent.run(student_id=1)
+def api_alerts(student_id: int = 1):
+    data = student_agent.run(student_id=student_id)
     return {"alerts": data.get("alerts", [])}
+
 @app.get("/api/coordinator")
-def api_coordinator(student_id: int = 1): return coordinator_run(student_id)
+def api_coordinator(student_id: int = 1): 
+    # Verify student exists first to avoid agents crashing
+    data = student_agent.run(student_id=student_id)
+    if data.get("status") == "error":
+        raise HTTPException(status_code=404, detail="Student not found")
+    return coordinator_run(student_id)
 
 @app.get("/api/context")
 def get_context():
@@ -185,13 +208,24 @@ class ScheduleRequest(BaseModel):
 class AttendanceRequest(BaseModel):
     student_id: int
     attendance: float
+    subject: str = "General"
     
 class CgpaRequest(BaseModel):
     student_id: int
     cgpa: float
 
-class CanteenRequest(BaseModel):
-    crowd_percent: int
+class CanteenMenuRequest(BaseModel):
+    item: str
+    price: str
+    tag: str = ""
+
+class PlacementDriveRequest(BaseModel):
+    company: str
+    role: str
+    date: str
+    min_cgpa: float
+    package: str
+    skills_required: str
 
 
 @app.post("/api/faculty/tasks")
@@ -225,29 +259,55 @@ def faculty_add_schedule(req: ScheduleRequest):
 @app.post("/api/faculty/attendance")
 def faculty_update_attendance(req: AttendanceRequest):
     conn = get_db_connection()
+    # Update overall attendance
     conn.execute("UPDATE student_info SET attendance=? WHERE id=?", (req.attendance, req.student_id))
+    # ALSO update subject-specific attendance
+    existing = conn.execute("SELECT id FROM subject_attendance WHERE student_id=? AND subject=?", (req.student_id, req.subject)).fetchone()
+    if existing:
+        conn.execute("UPDATE subject_attendance SET attendance_pct=? WHERE id=?", (req.attendance, existing["id"]))
+    else:
+        conn.execute("INSERT INTO subject_attendance (student_id, subject, attendance_pct) VALUES (?,?,?)", (req.student_id, req.subject, req.attendance))
+    
     conn.commit()
     conn.close()
     
-    log_agent_action("FacultyAgent", "override_attendance", f"Updated student {req.student_id} attendance to {req.attendance}%", severity="warning")
+    log_agent_action("FacultyAgent", "override_attendance", f"Updated student {req.student_id} attendance for {req.subject} to {req.attendance}%", severity="warning")
     return {"status": "success"}
 
 @app.post("/api/faculty/cgpa")
 def faculty_update_cgpa(req: CgpaRequest):
+    # This feature is now removed from faculty per user request. 
+    # CGPA is set at signup.
+    return {"status": "error", "message": "Feature deprecated"}
+
+# Canteen Management
+@app.post("/api/canteen/menu")
+def canteen_update_menu(req: CanteenMenuRequest):
     conn = get_db_connection()
-    conn.execute("UPDATE student_info SET cgpa=? WHERE id=?", (req.cgpa, req.student_id))
+    conn.execute("INSERT INTO canteen_menu (item, price, tag) VALUES (?,?,?)", (req.item, req.price, req.tag))
     conn.commit()
     conn.close()
-    
-    log_agent_action("FacultyAgent", "override_cgpa", f"Updated student {req.student_id} CGPA to {req.cgpa}", severity="info")
+    log_agent_action("CanteenAgent", "menu_update", f"Added '{req.item}' to the live menu", severity="success")
     return {"status": "success"}
 
-@app.post("/api/faculty/canteen")
-def faculty_update_canteen(req: CanteenRequest):
-    # This edits the MCP Context directly rather than a DB
+@app.post("/api/canteen/crowd")
+def canteen_update_crowd(req: dict):
+    crowd = req.get("crowd_percent", 50)
     ctx = get_context()
-    ctx["canteen_override"] = req.crowd_percent
+    ctx["canteen_override"] = crowd
     write_context(ctx)
-    
-    log_agent_action("FacultyAgent", "override_canteen", f"Forced canteen crowd prediction to {req.crowd_percent}%", severity="danger")
+    log_agent_action("CanteenAgent", "crowd_update", f"Manually set crowd level to {crowd}%", severity="warning")
+    return {"status": "success"}
+
+# Placement Management
+@app.post("/api/placement/drive")
+def placement_add_drive(req: PlacementDriveRequest):
+    conn = get_db_connection()
+    conn.execute(
+        "INSERT INTO placement_drives (company, role, date, min_cgpa, package, skills_required) VALUES (?,?,?,?,?,?)",
+        (req.company, req.role, req.date, req.min_cgpa, req.package, req.skills_required)
+    )
+    conn.commit()
+    conn.close()
+    log_agent_action("PlacementAgent", "new_drive", f"Announced {req.company} recruitment drive for {req.role}", severity="info")
     return {"status": "success"}

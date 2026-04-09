@@ -16,12 +16,44 @@ def init_db():
         CREATE TABLE IF NOT EXISTS student_info (
             id INTEGER PRIMARY KEY,
             name TEXT,
+            usn TEXT,
             year TEXT,
             major TEXT,
             attendance REAL,
             cgpa REAL,
             skills TEXT DEFAULT '',
-            email TEXT DEFAULT ''
+            email TEXT DEFAULT '',
+            profile_pic TEXT DEFAULT ''
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS subject_attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER,
+            subject TEXT,
+            attendance_pct REAL
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS canteen_menu (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item TEXT,
+            price TEXT,
+            tag TEXT
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS placement_drives (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            company TEXT,
+            role TEXT,
+            date TEXT,
+            min_cgpa REAL,
+            package TEXT,
+            skills_required TEXT
         )
     ''')
 
@@ -67,64 +99,39 @@ def init_db():
             usn TEXT DEFAULT '',
             branch TEXT DEFAULT '',
             student_id INTEGER,
+            profile_pic TEXT DEFAULT '',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
     c.execute("SELECT COUNT(*) FROM student_info")
     if c.fetchone()[0] == 0:
+        # We keep only ONE base student for demonstration, 
+        # but we remove the default massive schedules/tasks to favor dynamic management.
         c.execute("""
-            INSERT INTO student_info (id, name, year, major, attendance, cgpa, skills, email)
-            VALUES (1, 'Alice Johnson', '3rd Year', 'Computer Science', 78.5, 8.4,
-                    'Python, JavaScript, SQL, Machine Learning', 'alice@college.edu')
+            INSERT INTO student_info (id, name, usn, year, major, attendance, cgpa, skills, email, profile_pic)
+            VALUES (1, 'Keerthi', '1RV22CS001', '3rd Year', 'Computer Science', 85.0, 7.5,
+                    'Python, JavaScript, HTML, CSS, MySQL', 'student@college.edu', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Keerthi')
         """)
 
-        tasks = [
-            (1, 'AI Project Report', 'AI & ML', 'Tomorrow', 'Pending', 'high'),
-            (1, 'Database Lab Submission', 'DBMS', 'Today', 'Pending', 'high'),
-            (1, 'OS Assignment 3', 'Operating Systems', 'Next Monday', 'Pending', 'medium'),
-            (1, 'Web Dev Portfolio', 'Elective', 'Next Friday', 'Pending', 'low'),
-            (1, 'CN Lab Viva Prep', 'Computer Networks', 'Last Week', 'Completed', 'medium'),
-            (1, 'Math Assignment 5', 'Mathematics', 'Last Monday', 'Completed', 'low'),
-        ]
-        c.executemany(
-            "INSERT INTO tasks (student_id, task_name, subject, due_date, status, priority) VALUES (?,?,?,?,?,?)",
-            tasks
-        )
-
-        schedule = [
-            (1, 'Monday', 'AI & ML', '9:00 AM', 'Room 301'),
-            (1, 'Monday', 'DBMS Lab', '11:00 AM', 'Lab 2'),
-            (1, 'Monday', 'Operating Systems', '2:00 PM', 'Room 205'),
-            (1, 'Tuesday', 'Computer Networks', '9:00 AM', 'Room 102'),
-            (1, 'Tuesday', 'AI & ML Lab', '11:00 AM', 'Lab 1'),
-            (1, 'Tuesday', 'Mathematics', '3:00 PM', 'Room 401'),
-            (1, 'Wednesday', 'Operating Systems', '9:00 AM', 'Room 205'),
-            (1, 'Wednesday', 'Web Development', '11:00 AM', 'Lab 3'),
-            (1, 'Wednesday', 'DBMS', '2:00 PM', 'Room 301'),
-            (1, 'Thursday', 'AI & ML', '9:00 AM', 'Room 301'),
-            (1, 'Thursday', 'Computer Networks Lab', '11:00 AM', 'Lab 2'),
-            (1, 'Thursday', 'Mathematics', '2:00 PM', 'Room 401'),
-            (1, 'Friday', 'Soft Skills', '9:00 AM', 'Room 101'),
-            (1, 'Friday', 'Project Work', '11:00 AM', 'Lab 1'),
-        ]
-        c.executemany(
-            "INSERT INTO class_schedule (student_id, day, subject, time, room) VALUES (?,?,?,?,?)",
-            schedule
-        )
-
-        activities = [
-            ('Canteen', 'Peak crowd at 1:10 PM — biryani day'),
-            ('Placement', 'Google mock interview scheduled for Friday'),
-            ('Academic', 'Alice submitted CN Lab Viva — scored 9/10'),
-            ('Canteen', 'Low crowd after 3 PM — chai & samosa available'),
-            ('Placement', 'TCS registration deadline is April 20'),
-        ]
-        c.executemany("INSERT INTO activity (type, description) VALUES (?,?)", activities)
+        c.execute("""
+            INSERT INTO users (email, password, role, name, usn, branch, student_id, profile_pic)
+            VALUES ('student@college.edu', 'password123', 'student', 'Keerthi', '1RV22CS001', 'Computer Science', 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Keerthi')
+        """)
 
         c.execute("""
-            INSERT INTO users (email, password, role, name, usn, branch, student_id)
-            VALUES ('student@college.edu', 'password123', 'student', 'Alice Johnson', '1RV22CS001', 'Computer Science', 1)
+            INSERT INTO users (email, password, role, name)
+            VALUES ('faculty@college.edu', 'password123', 'faculty', 'Dr. Smith')
+        """)
+
+        c.execute("""
+            INSERT INTO users (email, password, role, name)
+            VALUES ('canteen@college.edu', 'password123', 'canteen', 'Canteen Master')
+        """)
+
+        c.execute("""
+            INSERT INTO users (email, password, role, name)
+            VALUES ('placement@college.edu', 'password123', 'placement', 'Placement Officer')
         """)
 
         conn.commit()

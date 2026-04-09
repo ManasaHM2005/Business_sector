@@ -63,26 +63,37 @@ export async function facultyAddSchedule(student_id, day, subject, time, room) {
   return res.json();
 }
 
-export async function facultyUpdateAttendance(student_id, attendance) {
+export async function facultyUpdateAttendance(student_id, attendance, subject) {
   const res = await fetch(`${API}/api/faculty/attendance`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ student_id, attendance }),
+    body: JSON.stringify({ student_id, attendance, subject }),
   });
   return res.json();
 }
 
-export async function facultyUpdateCgpa(student_id, cgpa) {
-  const res = await fetch(`${API}/api/faculty/cgpa`, {
+
+
+export async function addPlacementDrive(drive) {
+  const res = await fetch(`${API}/api/placement/drive`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ student_id, cgpa }),
+    body: JSON.stringify(drive),
   });
   return res.json();
 }
 
-export async function facultyUpdateCanteen(crowd_percent) {
-  const res = await fetch(`${API}/api/faculty/canteen`, {
+export async function addCanteenMenu(item) {
+  const res = await fetch(`${API}/api/canteen/menu`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(item),
+  });
+  return res.json();
+}
+
+export async function updateCanteenCrowd(crowd_percent) {
+  const res = await fetch(`${API}/api/canteen/crowd`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ crowd_percent }),

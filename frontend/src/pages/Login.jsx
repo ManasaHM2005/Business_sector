@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, signup, googleAuth } from "../api";
 
@@ -21,7 +21,8 @@ export default function Login() {
   // Signup fields
   const [form, setForm] = useState({
     role: "student", name: "", usn: "", branch: BRANCHES[0],
-    email: "", password: "",
+    email: "", password: "", skills: "", profile_pic: "",
+    cgpa: 7.0,
   });
 
   const setField = (k, v) => setForm({ ...form, [k]: v });
@@ -36,7 +37,8 @@ export default function Login() {
       localStorage.setItem("student_id", data.student_id);
       localStorage.setItem("user_name", data.name);
       localStorage.setItem("user_role", data.role);
-      navigate(data.role === "faculty" ? "/faculty" : "/");
+      const routes = { faculty: "/faculty", canteen: "/canteen", placement: "/placement" };
+      navigate(routes[data.role] || "/");
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
@@ -54,7 +56,8 @@ export default function Login() {
       localStorage.setItem("student_id", data.student_id);
       localStorage.setItem("user_name", data.name);
       localStorage.setItem("user_role", data.role);
-      navigate(data.role === "faculty" ? "/faculty" : "/");
+      const routes = { faculty: "/faculty", canteen: "/canteen", placement: "/placement" };
+      navigate(routes[data.role] || "/");
     } catch (e) { setError(e.message); }
     setLoading(false);
   };
@@ -74,11 +77,12 @@ export default function Login() {
   };
 
   // Redirect if already logged in
-  if (localStorage.getItem("user_id")) {
-    const role = localStorage.getItem("user_role");
-    navigate(role === "faculty" ? "/faculty" : "/");
-    return null;
-  }
+  useEffect(() => {
+    if (localStorage.getItem("user_id")) {
+      const role = localStorage.getItem("user_role");
+      navigate(role === "faculty" ? "/faculty" : "/");
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -160,14 +164,19 @@ export default function Login() {
 
               {/* Role Selection */}
               <label className="block text-xs text-gray-400 mb-2 font-medium">I am a</label>
-              <div className="flex gap-2 mb-4">
-                {["student", "faculty"].map(r => (
-                  <button key={r} onClick={() => setField("role", r)}
-                    className={`flex-1 py-2.5 rounded-lg font-semibold text-sm capitalize transition border
-                      ${form.role === r
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {[
+                  { id: "student", icon: "🎓" },
+                  { id: "faculty", icon: "👨‍🏫" },
+                  { id: "canteen", icon: "🍔" },
+                  { id: "placement", icon: "💼" }
+                ].map(r => (
+                  <button key={r.id} onClick={() => setField("role", r.id)}
+                    className={`py-2 rounded-lg font-semibold text-xs capitalize transition border
+                      ${form.role === r.id
                         ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent"
                         : "bg-white/5 text-gray-400 border-white/10 hover:border-white/20"}`}>
-                    {r === "student" ? "🎓 " : "👨‍🏫 "}{r}
+                    {r.icon} {r.id}
                   </button>
                 ))}
               </div>
@@ -194,7 +203,36 @@ export default function Login() {
 
               <label className="block text-xs text-gray-400 mb-1 font-medium">Create Password *</label>
               <input type="password" value={form.password} onChange={e => setField("password", e.target.value)} placeholder="••••••••"
-                className="w-full mb-4 px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none" />
+                className="w-full mb-3 px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none" />
+
+              {form.role === "student" && (<>
+                <label className="block text-xs text-gray-400 mb-1 font-medium">Skills (CSV) *</label>
+                <input value={form.skills} onChange={e => setField("skills", e.target.value)} placeholder="Python, React, SQL"
+                  className="w-full mb-3 px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none" />
+              </>)}
+
+              {form.role === "student" && (
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1 font-medium">Initial CGPA *</label>
+                    <input type="number" step="0.01" value={form.cgpa} onChange={e => setField("cgpa", parseFloat(e.target.value))}
+                      className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1 font-medium">Profile Photo URL</label>
+                    <input value={form.profile_pic} onChange={e => setField("profile_pic", e.target.value)} placeholder="https://..."
+                      className="w-full px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none" />
+                  </div>
+                </div>
+              )}
+
+              {form.role !== "student" && (
+                <>
+                  <label className="block text-xs text-gray-400 mb-1 font-medium">Profile Photo URL</label>
+                  <input value={form.profile_pic} onChange={e => setField("profile_pic", e.target.value)} placeholder="https://..."
+                    className="w-full mb-4 px-3 py-2 bg-black/30 border border-white/10 rounded-lg text-white text-sm focus:border-blue-500 focus:outline-none" />
+                </>
+              )}
 
               <button onClick={handleSignup} disabled={loading}
                 className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition disabled:opacity-50">

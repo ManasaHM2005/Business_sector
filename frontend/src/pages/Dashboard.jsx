@@ -9,13 +9,14 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const userName = localStorage.getItem("user_name") || "Student";
+  const userPic = localStorage.getItem("user_pic") || "";
   const avatar = userName.charAt(0).toUpperCase();
 
   useEffect(() => {
     if (!localStorage.getItem("user_id")) { navigate("/login"); return; }
     if (localStorage.getItem("user_role") === "faculty") { navigate("/faculty"); return; }
     load();
-    const id = setInterval(load, 2000); // Poll faster for live demo feel
+    const id = setInterval(load, 5000); // 5s is more stable for production-feel
     return () => clearInterval(id);
   }, []);
 
@@ -24,15 +25,23 @@ export default function Dashboard() {
       const d = await fetchCoordinator(); 
       setData(d); 
       setConnected(true); 
+      if (d.student?.student?.profile_pic) localStorage.setItem("user_pic", d.student.student.profile_pic);
       
       const ctx = await fetchContext();
       if(ctx.history) {
-        // Find recent faculty overrides to highlight
-        const recentOverrides = ctx.history.filter(h => h.agent === "FacultyAgent" && h.severity).slice(-3).reverse();
-        setMcpLogs(recentOverrides);
+        // Show all recent agent actions, prioritizing Faculty
+        const recentLogs = ctx.history.slice(-5).reverse();
+        setMcpLogs(recentLogs);
       }
     }
-    catch { setConnected(false); }
+    catch (e) { 
+      setConnected(false); 
+      console.error("Dashboard Load Error:", e);
+      // If primary data is missing, we need to show at least a basic state or error
+      if (!data) {
+        setData({ student: { student: { name: userName } }, summary: "System offline. Reconnecting...", cross_insights: [] });
+      }
+    }
   };
 
   const logout = () => { localStorage.clear(); navigate("/login"); };
@@ -61,8 +70,8 @@ export default function Dashboard() {
           </span>
           <div className="flex items-center gap-3 pl-4 border-l border-white/10">
             <span className="text-sm font-medium text-gray-300">{s.name}</span>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-bold shadow-md">
-              {avatar}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden flex items-center justify-center text-white font-bold shadow-md">
+              {userPic ? <img src={userPic} alt="P" className="w-full h-full object-cover" /> : avatar}
             </div>
             <button onClick={logout} className="text-xs text-gray-400 border border-white/10 px-2 py-1 rounded hover:text-red-400 transition ml-2">Logout</button>
           </div>
@@ -75,22 +84,47 @@ export default function Dashboard() {
         {/* Top: AI Summary & Live MCP Bar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
           
-          <div className="lg:col-span-3 p-5 rounded-xl bg-gradient-to-r from-blue-500/15 to-purple-500/15 border border-purple-500/30 animate-[fadeIn_0.6s] flex items-start gap-4">
-            <span className="text-3xl drop-shadow-[0_0_10px_rgba(168,85,247,0.8)]">✨</span>
-            <div><p className="text-xs font-bold text-purple-400 uppercase tracking-wider mb-1">AI Daily Summary</p>
-              <p className="text-sm leading-relaxed text-gray-200">{summary}</p></div>
+          <div className="lg:col-span-3 p-6 rounded-[2rem] bg-[#0d1526]/80 border border-purple-500/20 backdrop-blur-3xl relative overflow-hidden group shadow-2xl shadow-purple-500/5 transition-all hover:border-purple-500/40">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500/40 to-transparent"></div>
+            <div className="flex items-start gap-5 relative z-10">
+              <div className="relative">
+                <span className="text-4xl drop-shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse inline-block">🧠</span>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full blur-[2px] animate-ping opacity-50"></div>
+              </div>
+              <div className="flex-1">
+                <header className="flex justify-between items-center mb-2">
+                  <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.4em] italic">Neural Analysis Active</p>
+                  <span className="text-[8px] font-bold text-gray-500 tracking-widest">v4.2.0-STABLE</span>
+                </header>
+                <p className="text-sm font-medium leading-relaxed text-gray-100/90 tracking-tight font-sans selection:bg-purple-500/30">
+                  {summary}
+                </p>
+              </div>
+            </div>
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-purple-500/5 blur-[80px] rounded-full pointer-events-none"></div>
           </div>
 
-          <div className="lg:col-span-1 p-4 rounded-xl bg-black/40 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)] relative overflow-hidden flex flex-col justify-center">
-            <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-[pulse_2s_infinite]"></div>
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> Live MCP Overrides (Faculty)
+          <div className="lg:col-span-1 p-4 rounded-xl bg-black/40 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)] relative overflow-hidden flex flex-col justify-start min-h-[160px]">
+            <div className="absolute top-0 right-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-[pulse_2s_infinite]"></div>
+            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></span> Live MCP Overrides (Agents)
+              </span>
+              <span className="text-[8px] opacity-40">REAL-TIME</span>
             </p>
-            {mcpLogs.length === 0 ? <p className="text-xs text-gray-500">No overrides active.</p> : null}
-            <div className="space-y-2">
+            {mcpLogs.length === 0 ? <p className="text-xs text-gray-500 italic">Listening for agent signals...</p> : null}
+            <div className="space-y-2 overflow-y-auto max-h-[120px] pr-1 custom-scrollbar">
               {mcpLogs.map((log, i) => (
-                <div key={i} className="text-[11px] leading-tight text-gray-300 border-l-2 border-purple-500 pl-2">
-                  <span className="font-semibold text-purple-400">{log.action}</span>: {log.details}
+                <div key={i} className={`text-[10px] leading-tight p-2 rounded border-l-2 transition-all duration-500 animate-[slideIn_0.3s]
+                  ${log.agent === "FacultyAgent" ? "border-purple-500 bg-purple-500/5 text-purple-200" : 
+                    log.agent === "CanteenAgent" ? "border-orange-500 bg-orange-500/5 text-orange-200" :
+                    log.agent === "PlacementAgent" ? "border-indigo-500 bg-indigo-500/5 text-indigo-200" :
+                    "border-blue-500 bg-blue-500/5 text-blue-200"}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-black uppercase text-[8px] opacity-60 tracking-tighter">{log.agent}</span>
+                    <span className="text-[7px] opacity-40">{new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  </div>
+                  <span className="font-semibold text-white/90">{log.action}:</span> {log.details}
                 </div>
               ))}
             </div>
@@ -117,28 +151,76 @@ export default function Dashboard() {
 
           {/* Student Profile */}
           <Card title="👩‍🎓 Student Profile" badge={s.year}>
-            <div className="flex gap-4 items-center mb-4 pb-4 border-b border-white/5">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-2xl font-bold">
-                {avatar}
+            <div className="flex gap-4 items-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 p-0.5 shadow-lg shadow-blue-500/20">
+                <div className="w-full h-full rounded-full bg-[#0a0e1a] flex items-center justify-center overflow-hidden border-2 border-white/10">
+                  {userPic || s.profile_pic ? <img src={userPic || s.profile_pic} className="w-full h-full object-cover" /> : <span className="text-2xl font-black">{avatar}</span>}
+                </div>
               </div>
               <div>
-                <h4 className="text-lg font-bold">{s.name}</h4>
-                <p className="text-gray-500 text-sm">{s.major} | USN: {s.usn || "N/A"}</p>
+                <h4 className="text-xl font-extrabold tracking-tight">{s.name}</h4>
+                <p className="text-gray-500 text-xs font-medium uppercase tracking-widest">{s.major} • USN: {s.usn || "N/A"}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {s.skills?.split(",").map((sk, i) => (
+                    <span key={i} className="text-[8px] font-black px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-md uppercase">
+                      {sk.trim()}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              <Stat value={`${s.attendance}%`} label="Attendance" />
-              <Stat value={s.cgpa} label="CGPA" />
-              <Stat value={stats.pending} label="Pending" />
-              <Stat value={stats.today_classes_count} label="Classes" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center hover:bg-white/5 transition-colors">
+                <span className="text-2xl font-black text-cyan-400">{s.attendance}%</span>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Average Attendance</span>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center hover:bg-white/5 transition-colors">
+                <span className="text-2xl font-black text-purple-400">{s.cgpa}</span>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Current CGPA</span>
+              </div>
             </div>
           </Card>
 
-          {/* Alerts */}
+          {/* Academic Records (Real-World Subject Tracking) */}
+          <Card title="📊 Academic Ledger" badge={`${student?.subject_attendance?.length || 0} subjects`}>
+            <div className="space-y-4 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+              {student?.subject_attendance?.length > 0 ? (
+                student.subject_attendance.map((sub, i) => (
+                  <div key={i} className="group cursor-default">
+                    <div className="flex justify-between items-end mb-1.5 px-1">
+                      <div>
+                        <span className="text-xs font-bold text-gray-200 group-hover:text-cyan-400 transition-colors">{sub.subject}</span>
+                        <p className="text-[8px] text-gray-600 font-bold uppercase tracking-tighter">Current Health: {sub.attendance_pct < 75 ? "Warning" : "Optimal"}</p>
+                      </div>
+                      <span className={`text-xs font-black ${sub.attendance_pct < 75 ? 'text-red-500' : 'text-cyan-400'}`}>
+                        {sub.attendance_pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                      <div 
+                        className={`h-full transition-all duration-1000 ease-out rounded-full ${sub.attendance_pct < 75 ? 'bg-gradient-to-r from-red-600 to-red-400' : 'bg-gradient-to-r from-cyan-600 to-blue-400'}`}
+                        style={{ width: `${sub.attendance_pct}%` }}
+                      >
+                         <div className="w-full h-full bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
+                  <div className="text-3xl mb-2 opacity-20">📀</div>
+                  <p className="text-xs text-gray-600 font-bold uppercase tracking-widest">Awaiting Neural Link</p>
+                  <p className="text-[10px] text-gray-700 mt-1 italic italic">Ask faculty to sync subject records</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Smart Alerts */}
           <Card title="⚠️ Smart Alerts" badge={student?.alerts?.length}>
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
               {student?.alerts?.map((a, i) => (
-                <div key={i} className={`flex items-start gap-3 p-3 rounded-lg text-sm border-l-4 transition-all duration-300 hover:translate-x-1
+                <div key={i} className={`flex items-start p-3 rounded-lg text-sm border-l-4 transition-all duration-300 hover:translate-x-1
                   ${a.type === "danger" ? "bg-red-500/10 border-red-500 text-red-100" :
                     a.type === "warning" ? "bg-amber-500/10 border-amber-500 text-amber-100" :
                     a.type === "success" ? "bg-green-500/10 border-green-500 text-green-100" :
@@ -146,6 +228,31 @@ export default function Dashboard() {
                   <span className="text-lg mt-0.5">{a.icon}</span><span className="leading-snug">{a.message}</span>
                 </div>
               ))}
+              {student?.alerts?.length === 0 && <p className="text-gray-500 text-xs italic py-4 text-center">No risk detected. Systems normal.</p>}
+            </div>
+          </Card>
+
+          {/* Pending Tasks */}
+          <Card title="✍️ Pending Assignments" badge={stats.pending}>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+              {student?.pending_tasks?.length > 0 ? (
+                student.pending_tasks.map((t, i) => (
+                  <div key={i} className={`p-3 rounded-lg bg-white/5 border border-white/5 flex justify-between items-center group hover:bg-white/10 transition`}>
+                    <div>
+                      <p className="font-bold text-sm group-hover:text-blue-400 transition">{t.task_name}</p>
+                      <p className="text-[10px] text-gray-500">{t.subject} • Due {t.due_date}</p>
+                    </div>
+                    <span className={`text-[8px] font-black uppercase px-2 py-1 rounded border
+                      ${t.priority === 'high' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'}`}>
+                      {t.priority}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="py-8 text-center border border-dashed border-white/10 rounded-xl">
+                  <p className="text-gray-500 text-sm">All cleared! 🎉</p>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -154,14 +261,21 @@ export default function Dashboard() {
             {student?.today_classes?.length > 0 ? (
               <div className="space-y-2">
                 {student.today_classes.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 text-sm hover:bg-white/10 transition">
-                    <span className="font-bold text-cyan-400 w-20">{c.time}</span>
-                    <span className="flex-1 ml-2 font-medium">{c.subject}</span>
-                    <span className="text-gray-400 text-xs px-2 py-1 bg-black/30 rounded">{c.room}</span>
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 text-sm hover:bg-white/10 transition group">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-cyan-400 w-20">{c.time}</span>
+                      <span className="font-medium group-hover:text-cyan-300 transition">{c.subject}</span>
+                    </div>
+                    <span className="text-gray-400 text-[10px] px-2 py-1 bg-black/30 rounded border border-white/5">{c.room}</span>
                   </div>
                 ))}
               </div>
-            ) : <p className="text-gray-500 text-sm italic">No classes today 🎉</p>}
+            ) : (
+              <div className="text-center py-6 border-2 border-dashed border-white/10 rounded-xl">
+                <p className="text-gray-500 text-sm italic mb-2">No classes scheduled for today 🎉</p>
+                <p className="text-[10px] text-gray-600">Faculty can push live overrides to your schedule.</p>
+              </div>
+            )}
           </Card>
 
           {/* Placement */}
@@ -175,16 +289,39 @@ export default function Dashboard() {
               ))}
             </div>
             
-            <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">📋 Eligible Drives</p>
-            {placement?.eligible_drives?.map((d, i) => (
-              <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-gradient-to-r from-white/5 to-transparent border border-white/5 mb-2 text-sm hover:border-indigo-500/30 transition">
-                <div>
-                  <p className="font-bold text-white">{d.company} <span className="text-gray-400 font-normal">— {d.role}</span></p>
-                  <p className="text-gray-500 text-xs mt-1">📅 {d.date} • Min CGPA: {d.min_cgpa}</p>
-                </div>
-                <span className="text-green-400 font-black text-lg bg-green-400/10 px-2 py-1 rounded">{d.package}</span>
+            <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-3">📋 All Campus Drives</p>
+            {placement?.all_drives?.length > 0 ? (
+              placement.all_drives.map((d, i) => {
+                const isEligible = placement.eligible_drives?.some(ed => ed.company === d.company && ed.role === d.role);
+                return (
+                  <div key={i} className={`flex justify-between items-center p-3 rounded-lg border mb-2 text-sm transition-all duration-300
+                    ${isEligible 
+                      ? "bg-gradient-to-r from-indigo-500/10 to-transparent border-indigo-500/30 hover:border-indigo-500/60 shadow-lg shadow-indigo-500/5" 
+                      : "bg-white/[0.02] border-white/5 opacity-60 hover:opacity-100 hover:border-white/10"}`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-white">{d.company}</p>
+                        {isEligible ? (
+                          <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30 animate-pulse">MATCHED</span>
+                        ) : (
+                          <span className="text-[9px] font-black bg-gray-500/20 text-gray-500 px-1.5 py-0.5 rounded border border-white/10">PENDING REQUIREMENTS</span>
+                        )}
+                      </div>
+                      <p className="text-gray-400 text-xs">{d.role}</p>
+                      <p className="text-gray-500 text-[10px] mt-1 italic">Required: {d.skills_required || "None"}</p>
+                      <p className="text-gray-500 text-xs mt-1 text-[11px]">📅 {d.date} • Threshold: {d.min_cgpa} CGPA</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`font-black text-lg px-2 py-1 rounded ${isEligible ? "text-green-400 bg-green-400/10" : "text-gray-600 bg-white/5"}`}>{d.package}</span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center border border-dashed border-white/10 rounded-xl">
+                <p className="text-gray-500 text-sm italic">No active recruitment cycles reported</p>
               </div>
-            ))}
+            )}
 
             <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mt-5 mb-3">📆 Weekly Prep Plan</p>
             <ol className="space-y-2">
